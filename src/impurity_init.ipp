@@ -246,7 +246,15 @@ void HybridizationSimulation<IMP_MODEL>::create_worm_updaters() {
 
   //if we have active worm spaces, we activate flat histogram algorithm.
   if (worm_types.size() > 0) {
-    p_flat_histogram_config_space.reset(new FlatHistogram(worm_types.size()));
+    std::vector<double> target_fractions;
+    target_fractions.push_back(1.0);//partition function space
+    for (int w = 0; w < worm_types.size(); ++w) {
+      //we should not spend too many Monte Carlo steps for measuring equal-time observables
+      target_fractions.push_back(
+          (worm_types[w] == Equal_time_G1 || worm_types[w] == Equal_time_G2) ? 0.1 : 1.0
+      );
+    }
+    p_flat_histogram_config_space.reset(new FlatHistogram(worm_types.size(), target_fractions));
   }
   config_space_extra_weight.resize(0);
   config_space_extra_weight.resize(worm_types.size() + 1, 1.0);
@@ -326,7 +334,7 @@ void HybridizationSimulation<IMP_MODEL>::resize_vectors() {
     }
     swap_acc_rate.resize(swap_vector.size());
 
-    if (global_mpi_rank == 0) {
+    if (comm.rank() == 0) {
       std::cout << "The following swap updates will be performed." << std::endl;
       for (int i = 0; i < swap_vector.size(); ++i) {
         std::cout << "Update #" << i << " generated from template #" << swap_vector[i].second << std::endl;
@@ -343,7 +351,7 @@ void HybridizationSimulation<IMP_MODEL>::read_eq_time_two_particle_greens_meas()
   const int GF_RANK = 2;
 
   const std::string fname_key = "EQUAL_TIME_TWO_PARTICLE_GREENS_FUNCTION";
-  const bool verbose = (global_mpi_rank == 0);
+  const bool verbose = (comm.rank() == 0);
 
   if (!par.defined(fname_key)) {
     return;
@@ -389,14 +397,13 @@ void HybridizationSimulation<IMP_MODEL>::read_eq_time_two_particle_greens_meas()
 template<typename IMP_MODEL>
 void HybridizationSimulation<IMP_MODEL>::read_two_time_correlation_functions() {
   const std::string fname_key = "measurement.nn_corr.def";
-  const bool verbose = (global_mpi_rank == 0);
+  const bool verbose = (comm.rank() == 0);
 
   if (!par.defined("measurement.nn_corr.n_tau")) {
     return;
   }
   const int num_tau_points = par["measurement.nn_corr.n_tau"];
   const int num_def = par["measurement.nn_corr.n_def"];
-  std::cout << "debug " << num_def << std::endl;
   if (num_tau_points < 2 || !par.defined(fname_key)) {
     return;
   }

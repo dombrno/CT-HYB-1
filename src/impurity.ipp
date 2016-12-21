@@ -11,7 +11,7 @@ void HybridizationSimulation<IMP_MODEL>::define_parameters(parameters_type &para
   long > ("timelimit", "Total simulation time (in units of second)")
       .define<double>("thermalization_time",
                       -1,
-                      "Thermalization time (in units of second). The default value is 25 % of timelimit.")
+                      "Thermalization time (in units of second). The default value is 10 % of timelimit.")
       //.define<int>("Tmin", 1, "The scheduler checks longer than every Tmin seconds if the simulation is finished.")
       //.define<int>("Tmax", 60, "The scheduler checks shorter than every Tmax seconds if the simulation is finished.")
       .define<std::string>("outputfile",
@@ -110,7 +110,7 @@ HybridizationSimulation<IMP_MODEL>::HybridizationSimulation(parameters_type cons
       single_op_shift_updater(BETA, FLAVORS, N),
       worm_insertion_removers(0),
       sliding_window(p_model.get(), BETA),
-      g_meas_legendre(FLAVORS, p["measurement.G1.n_legendre"], N, BETA),
+      g_meas_legendre(FLAVORS, p["measurement.G1.n_legendre"], p["measurement.G1.n_matsubara"], BETA),
       p_meas_corr(0),
       global_shift_acc_rate(),
       swap_acc_rate(0),
@@ -122,7 +122,7 @@ HybridizationSimulation<IMP_MODEL>::HybridizationSimulation(parameters_type cons
 {
 
   if (thermalization_time < 0) {
-    thermalization_time = static_cast<double>(0.25 * parameters["timelimit"].template as<double>());
+    thermalization_time = static_cast<double>(0.1 * parameters["timelimit"].template as<double>());
   }
   if (thermalization_time > 0.9 * parameters["timelimit"].template as<double>()) {
     throw std::runtime_error("timelimit is too short in comparison with thermalization_time.");
@@ -146,7 +146,7 @@ HybridizationSimulation<IMP_MODEL>::HybridizationSimulation(parameters_type cons
   }
   sliding_window.init_stacks(p["sliding_window.min"], mc_config.operators);
   mc_config.trace = sliding_window.compute_trace(mc_config.operators);
-  if (global_mpi_rank == 0 && verbose) {
+  if (comm.rank() == 0 && verbose) {
     std::cout << "initial trace = " << mc_config.trace << " with N_SLIDING_WINDOW = " << sliding_window.get_n_window()
               << std::endl;
   }
@@ -157,7 +157,7 @@ HybridizationSimulation<IMP_MODEL>::HybridizationSimulation(parameters_type cons
   //Two-time correlation functions
   read_two_time_correlation_functions();
 
-  if (global_mpi_rank == 0 && verbose) {
+  if (comm.rank() == 0 && verbose) {
     std::cout << "The number of blocks in the inverse matrix is " << mc_config.M.num_blocks() << "." << std::endl;
     for (int block = 0; block < mc_config.M.num_blocks(); ++block) {
       std::cout << "flavors in block " << block << " : ";
@@ -487,17 +487,27 @@ void HybridizationSimulation<IMP_MODEL>::measure_two_time_correlation_functions(
 
 template<typename IMP_MODEL>
 void HybridizationSimulation<IMP_MODEL>::do_one_sweep() {
-  assert(sliding_window.get_position_right_edge() == 0);
+  //assert(sliding_window.get_position_right_edge() == 0);
 
-  boost::random::uniform_int_distribution<> dist(1, par["update.multi_pair_ins_rem"].template as<int>());
-  const int rank_ins_rem = dist(random.engine());
+  //Propose higher-order insertion/removal updates less frequently
+  std::vector<double> proposal_rates;
+  {
+    double p = 1.0;
+    for (int update_rank = 0; update_rank < par["update.multi_pair_ins_rem"].template as<int>(); ++update_rank) {
+      proposal_rates.push_back(p);
+      p *= 0.25;
+    }
+  }
+  boost::random::discrete_distribution<> dist(proposal_rates);
+
+  const int rank_ins_rem = dist(random.engine()) + 1;
   const int current_n_window = std::max(N_win_standard / rank_ins_rem, 1);
   if (current_n_window != sliding_window.get_n_window()) {
     sliding_window.set_window_size(current_n_window, mc_config.operators, 0, ITIME_LEFT);
   }
 
-  assert(sliding_window.get_position_right_edge() == 0);
-  const int num_move = std::max(4 * current_n_window - 4, 1);
+  //assert(sliding_window.get_position_right_edge() == 0);
+  const int num_move = std::max(2 * current_n_window - 2, 1);
   for (int move = 0; move < num_move; ++move) {
     double pert_order_sum = 0;
     //insertion and removal of operators hybridized with the bath
@@ -514,6 +524,9 @@ void HybridizationSimulation<IMP_MODEL>::do_one_sweep() {
 
     if (is_thermalized()) {
       config_spaces_visited_in_measurement_steps[get_config_space_position(mc_config.current_config_space())] = true;
+      //if (move%10 == 0) {
+        //measure_every_step();
+      //}
     }
 
     transition_between_config_spaces();
@@ -521,7 +534,7 @@ void HybridizationSimulation<IMP_MODEL>::do_one_sweep() {
     sliding_window.move_window_to_next_position(mc_config.operators);
   }
   sanity_check();
-  assert(sliding_window.get_position_right_edge() == 0);
+  //assert(sliding_window.get_position_right_edge() == 0 || sliding_window.get_position_right_edge() == 2*current_n_window-2);
 }
 
 template<typename IMP_MODEL>
@@ -695,7 +708,7 @@ void HybridizationSimulation<IMP_MODEL>::update_MC_parameters() {
 
       )
   );
-  if (verbose && global_mpi_rank == 0 && sweeps % 10 == 0) {
+  if (verbose && comm.rank() == 0 && sweeps % 10 == 0) {
     std::cout << " new window size = " << N_win_standard << " sweep = " << sweeps << " pert_order = "
               << mc_config.pert_order() << std::endl;
   }
@@ -742,14 +755,14 @@ void HybridizationSimulation<IMP_MODEL>::prepare_for_measurement() {
     it->second->finalize_learning();
   }
 
-  if (global_mpi_rank == 0) {
+  if (comm.rank() == 0) {
     std::cout << "Thermalization process done after " << sweeps << " steps." << std::endl;
     std::cout << "The number of segments for sliding window update is " << N_win_standard << "."
               << std::endl;
     std::cout << "Perturbation orders (averaged over processes) are the following:" << std::endl;
   }
   const std::vector<int> &order_creation_flavor = count_creation_operators(FLAVORS, mc_config);
-  if (global_mpi_rank == 0) {
+  if (comm.rank() == 0) {
     for (int flavor = 0; flavor < FLAVORS; ++flavor) {
       std::cout << " flavor " << flavor << " " << order_creation_flavor[flavor] << std::endl;
     }
@@ -760,14 +773,21 @@ void HybridizationSimulation<IMP_MODEL>::prepare_for_measurement() {
       std::cout <<
                 boost::format(
                     "Warning: flat histogram is not yet obtained for MPI rank %1%. Increase thermalization time!"
-                ) % global_mpi_rank << std::endl;
+                ) % comm.rank() << std::endl;
+    }
+    p_flat_histogram_config_space->synchronize(comm);
+    // Apply the new worm space weights
+    config_space_extra_weight[0] = 1.0;
+    for (int w = 0; w < worm_types.size(); ++w) {
+      config_space_extra_weight[w + 1] = p_flat_histogram_config_space->weight_ratio(w + 1, 0);
+      worm_space_extra_weight_map[worm_types[w]] = p_flat_histogram_config_space->weight_ratio(w + 1, 0);
     }
     p_flat_histogram_config_space->finish_learning(false);
   }
   measurements["Pert_order_start"] << pert_order_recorder.mean();
 
   if (verbose) {
-    std::cout << std::endl << "Weight of configuration spaces for MPI rank " << global_mpi_rank << " : ";
+    std::cout << std::endl << "Weight of configuration spaces for MPI rank " << comm.rank() << " : ";
     std::cout << " Z function space = " << config_space_extra_weight[0];
     for (int w = 0; w < worm_types.size(); ++w) {
       std::cout << " , " << get_config_space_name(worm_types[w]) << " = " << config_space_extra_weight[w + 1];

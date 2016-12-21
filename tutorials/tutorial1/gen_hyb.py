@@ -18,7 +18,7 @@ def ft_to_tau_hyb(ndiv_tau, beta, matsubara_freq, tau, Vek, data_n, data_tau, cu
 
 vbeta=20.0
 ndiv_tau=1000
-nf=6
+nf=4
 
 matsubara_freq=np.zeros((ndiv_tau,),dtype=float)
 for im in range(ndiv_tau):
