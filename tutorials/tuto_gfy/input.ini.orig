@@ -1,0 +1,30 @@
+seed=20
+<<<<<<< HEAD
+timelimit=6000
+=======
+timelimit=23000
+>>>>>>> 188d683cc11e214c56c5256263f2b3a240dca97a
+
+[model]
+sites=2
+spins=2
+coulomb_tensor_input_file="Uijkl.txt"
+hopping_matrix_input_file="hopping.txt"
+beta=60.0
+delta_input_file="ec_delta.txt"
+n_tau_hyb=1600
+
+[update]
+swap_vector="1 0 3 2  1 2 3 0"
+
+[measurement.G1]
+n_legendre=40
+n_tau=1600
+n_matsubara=955
+
+[measurement.two_time_G2]
+on=0
+n_legendre=50
+
+[measurement.equal_time_G2]
+on=0
