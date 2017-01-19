@@ -84,15 +84,56 @@ def generate_U_tensor_kunes(n_orb, U, JH, Jprime):
                                 num_elem += 1
     return U_tensor, num_elem
 
-n_site = 2
-Uval = 2.0
+def generate_dd_tensor(n_orb, U, JH):
+    n_spins = 2
+    U_prime = U - 2.0 * JH
+    U_tensor = np.zeros((n_orb,2,n_orb,2,n_orb,2,n_orb,2),dtype=complex)
+
+    num_elem = 0
+    for iorb1 in xrange(n_orb):
+        iorb2 = 1 - iorb1
+        for isp1 in xrange(n_spins):
+            isp2 = 1 - isp1
+            U_tensor[iorb1, isp1, iorb2, isp2,
+                     iorb1, isp1, iorb2, isp2] = -0.5 * U_prime
+            U_tensor[iorb1, isp1, iorb2, isp2,
+                     iorb2, isp2, iorb1, isp1 ] = 0.5 * U_prime
+            
+            num_elem += 2
+
+    for iorb1 in xrange(n_orb):
+        iorb2 = 1 - iorb1
+        for isp1 in xrange(n_spins):
+            isp2 = isp1
+            U_tensor[iorb1, isp1, iorb2, isp2,
+                     iorb1, isp1, iorb2, isp2] = -0.5 * U_prime + 0.5 * JH
+            U_tensor[iorb1, isp1, iorb2, isp2,
+                     iorb2, isp2, iorb1, isp1 ] = 0.5 * U_prime + 0.5 * JH
+            num_elem += 2
+
+    for iorb1 in xrange(n_orb):
+        iorb2 = iorb1
+        for isp1 in xrange(n_spins):
+            isp2 = 1 - isp1
+            U_tensor[iorb1, isp1, iorb2, isp2,
+                     iorb1, isp1, iorb2, isp2] = -0.5 * U
+            U_tensor[iorb1, isp1, iorb2, isp2,
+                     iorb2, isp2, iorb1, isp1 ] = 0.5 * U
+            num_elem += 2
+    print "found ", num_elem, "non zero coefficients in local Hamiltonian"
+    return U_tensor, num_elem
+
+
+
+n_sites = 2
+Uval = 4.0
 Jval = 0.25 * Uval
 #Jprime = 0.002
-Jprime = 0.00
+Jprime = Uval - 2.0 * Jval
 
 V_mat = np.identity(2 * n_site, dtype=complex)
 
-U_tensor, num_elem = generate_U_tensor_kunes(n_site, Uval, Jval, Jprime)
+U_tensor, num_elem = generate_dd_tensor(n_sites, Uval, Jval, Jprime)
 
 f = open("Uijkl.txt", "w")
 print >>f, num_elem

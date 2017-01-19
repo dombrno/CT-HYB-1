@@ -1,54 +1,86 @@
+import os
 import numpy as np
-from scipy.integrate import simps
+import matplotlib.pyplot as plt
+from numpy import array
+from pylab import figure, xticks, yticks
+import pylab
+import socket
+import matplotlib
+import matplotlib.pyplot as plt
+from scipy.interpolate import griddata
 from math import pi
+import sys
+from numpy import array
+import numpy as np
+from math import pi
+from matplotlib.colors import LogNorm
+from matplotlib.ticker import AutoMinorLocator
+import h5py as h5
+from pathlib import Path, PurePath
 
-def ft_to_tau_hyb(ndiv_tau, beta, matsubara_freq, tau, Vek, data_n, data_tau, cutoff):
- for it in range(ndiv_tau+1):
-     tau_tmp=tau[it]
-     if it==0:
-         tau_tmp=1E-4*(beta/ndiv_tau)
-     if it==ndiv_tau:
-         tau_tmp=beta-1E-4*(beta/ndiv_tau)
-     ztmp=0.0
-     for im in range(cutoff):
-         ztmp+=(data_n[im]+1J*Vek/matsubara_freq[im])*np.exp(-1J*matsubara_freq[im]*tau_tmp)
-     ztmp=ztmp/beta
-     data_tau[it]=2.0*ztmp.real-0.5*Vek
+target_location = PurePath(os.environ['HOME'], 'Code', 'Linear_response', 'Source', 'Misc')
+
+print Path.cwd()
+
+if str(target_location) not in sys.path:
+    sys.path.append(str(target_location))
+print sys.path
+
+import analyze_output as an
+
+data_root = PurePath(os.environ['HOME'], 'Code', 'Linear_response', 'Data',
+                     'Alps2', 'od_hyb', '1site', 'ch0', 'even', 'dope1.6', 'b22',
+                     'real')
+
+all_orbitals = ['a_up','b_down','a_down','b_up']
+nb_sites = 1
+nb_orbital_couples = len(all_orbitals)**2
+nb_orbitals = len(all_orbitals * nb_sites)
+n_orbitals = len(all_orbitals)
 
 
-vbeta=20.0
-ndiv_tau=1000
-nf=4
+configs = ['real']
 
-matsubara_freq=np.zeros((ndiv_tau,),dtype=float)
-for im in range(ndiv_tau):
-    matsubara_freq[im]=((2*im+1)*np.pi)/vbeta
+print "data root:\n", data_root
+print
+print "configs: \n", configs
 
-tau=np.zeros((ndiv_tau+1,),dtype=float)
-for it in range(ndiv_tau+1):
-    tau[it]=(vbeta/ndiv_tau)*it
 
-ndiv_dos = 10000
-W=2.0
-e_smp=np.linspace(-W,W,ndiv_dos)
-dos_smp=np.sqrt(W**2-e_smp**2)/(0.5*pi*W**2)
-ek_var = simps(dos_smp*(e_smp**2), e_smp)
 
-#Bath Green's function (g_omega, g_tau)
-g_omega=np.zeros((ndiv_tau,),dtype=complex)
-g_tau=np.zeros((ndiv_tau+1,),dtype=complex)
-for im in range(ndiv_tau):
-    f_tmp = dos_smp/(1J*matsubara_freq[im]-e_smp)
-    g_omega[im]=simps(f_tmp,e_smp)
+config_index = -1
+beta = 60.0
+config = configs[config_index]
+current_path = PurePath(data_root, config)
 
-ft_to_tau_hyb(ndiv_tau,vbeta,matsubara_freq,tau,1.0,g_omega,g_tau,ndiv_tau)
+gtau2 = {}
+print str(Path(current_path, 'c_delta_0.h5'))
 
-f = open('delta.txt', 'w')
-for i in range(ndiv_tau+1):
-    for j in range(nf):
-        for k in range(nf):
-            if j==k:
-                print >>f, i, j, k, g_tau[i].real, g_tau[i].imag
-            else:
-                print >>f, i, j, k, 0.0, 0.0
-f.close()
+print "trying to open", current_path
+
+with h5.File(str(Path(current_path, 'c_delta_0.h5')), 'r') as input_file:
+    for i in range(n_orbitals * n_orbitals):
+        row_index = i / n_orbitals
+        col_index = i % n_orbitals
+        target_h5_name = '/'
+        my_group = input_file.get(target_h5_name)
+        temp_data = (np.array(my_group.get('Delta_' + str(i))[:, 0] +
+                        my_group.get('Delta_' + str(i))[:, 1] * 1j))
+        gtau2[i] = temp_data
+
+corresp[0] = 0
+corresp[1] = 1
+corresp[2] = 2
+corresp[3] = 3
+
+output_file = str(Path(Path.cwd(), 'ec_delta.txt'))
+with open(output_file, 'w') as output_file:
+    for tau_index in np.arange(gtau2[i].shape[0]):
+        for i in np.arange(n_orbitals):
+            for j in np.arange(n_orbitals):
+                orb_index = corresp[i] * n_orbitals + corresp[j]
+                out_str = (str(tau_index) + '  ' +
+                           str(i) + '  ' +
+                           str(j) + '  ' +
+                           str(np.real(gtau2[orb_index][tau_index])) + '  ' +
+                           str(np.imag(gtau2[orb_index][tau_index])) + '\n')
+                output_file.write(out_str)

@@ -3,14 +3,15 @@ import numpy as np
 from scipy.integrate import simps
 from math import pi
 
-#Lambda = 1.0
-# convention: a_up, a_down, b_up, b_down
+# convention: a_up, b_down, a_down, b_up
 Lambda = 0.0
 nf=4
 norb=nf/2
 Uval = 8.0
 Jval = 0.25*Uval
-shifts = np.array([0.0, 0.0, -3.4, -3.4], dtype=complex)
+crystal_field = 3.4
+shifts = np.array([0.0, -crystal_field,
+                   0.0, -crystal_field], dtype=complex)
 
 
 Himp = -0.5*Lambda*np.array( [
@@ -21,8 +22,8 @@ Himp = -0.5*Lambda*np.array( [
         [ 0, -1,  0,  1J,  0,  0],
         [ 1,  0, 1J,   0,  0,  0]], dtype=complex)
 
-# from b60/enforce_real
-mu = 1.3870789578665168
+# from ch0/dope1.6/b22/real
+mu = 1.1553024
 
 #2.5*Uval-5*Jval
 

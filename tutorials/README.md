@@ -32,3 +32,18 @@ plot the data, and save the plot as a PDF file.
 The graph looks like this (simulation time was 10min with 60 MPI processes).
 ![](tutorial1/GF.png)
 
+## Tuto_gfy
+
+This tutorial deals with a two-orbital model using density-density interaction.
+The hybridization function is provided by an ad hoc file ec_delta.txt.
+The hybridization function contains off-diagonal elements.
+
+We take U=4.0 and J=0.25 * U. (U'=U-2J) for the density-density interaction following the application in PRL 116, 256403 (2016). The chemical potential is 1.1553024, the crystal field splitting is Delta = 3.4. The inverse temperature is 22. ec_delta corresponds to the case doping=1.6, ch=0.0
+
+Python scripts for generating input files are available [here](https://github.com/ALPSCore/CT-HYB/tree/master/tutorials/tuto_gfy).
+Checkout the files and provide something like the following:
+```
+$python gen_Uijkl.py                       #generate Coulomb matrix
+$python gen_hopping.py                     #generate hopping matrix
+$mpirun -np 60 /path/to/hybmat input.ini   #run the solver with 60 MPI processes
+```
