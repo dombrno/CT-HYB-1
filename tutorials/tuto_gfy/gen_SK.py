@@ -100,7 +100,6 @@ def generate_dd_tensor(n_orb, U, JH):
                      iorb1, isp1, iorb2, isp2] = -0.5 * U_prime
             U_tensor[iorb1, isp1, iorb2, isp2,
                      iorb2, isp2, iorb1, isp1 ] = 0.5 * U_prime
-            
             num_elem += 2
 
     for iorb1 in xrange(n_orb):
@@ -122,13 +121,29 @@ def generate_dd_tensor(n_orb, U, JH):
             U_tensor[iorb1, isp1, iorb2, isp2,
                      iorb2, isp2, iorb1, isp1 ] = 0.5 * U
             num_elem += 2
-    print "found ", num_elem, "non zero coefficients in local Hamiltonian"
+    print "found ", num_elem, "non zero coefficients in local Hamiltonian (DD)"
     return U_tensor, num_elem
 
-
+def add_sk_tensor(n_orb, U_tensor, num_elem, JH):
+    # adds the SU(2) component to the dd Hamiltonian
+    n_spins = 2
+    for iorb1 in xrange(n_orb):
+        iorb2 = 1 - iorb1
+        for isp1 in xrange(n_spins):
+            isp2 = 1 - isp1
+            if (np.abs(U_tensor[iorb1, isp1, iorb2, isp2, iorb1, isp2, iorb2, isp1]) < 0.0000001):
+                num_elem += 2
+            else:
+                print U_tensor[iorb1, isp1, iorb2, isp2, iorb1, isp2, iorb2, isp1]
+            U_tensor[iorb1, isp1, iorb2, isp2,
+                     iorb1, isp2, iorb2, isp1] += 0.25 * JH
+            U_tensor[iorb1, isp1, iorb2, isp2,
+                     iorb2, isp1, iorb1, isp2] -= 0.25 * JH
+    print "found ", num_elem, "non zero coefficients in local Hamiltonian (SK)"
+    return U_tensor, num_elem
 
 n_sites = 2
-Uval = 5.0
+Uval = 4.0
 #Jval = 0.25 * Uval
 Jval = 1.0
 #Jprime = 0.002
@@ -136,6 +151,7 @@ Jval = 1.0
 V_mat = np.identity(2 * n_sites, dtype=complex)
 
 U_tensor, num_elem = generate_dd_tensor(n_sites, Uval, Jval)
+U_tensor, num_elem = add_sk_tensor(n_sites, U_tensor, num_elem, Jval)
 
 corresp = {}
 corresp[(0, 0)] = 0
@@ -143,7 +159,7 @@ corresp[(0, 1)] = 2
 corresp[(1, 0)] = 3
 corresp[(1, 1)] = 1
 
-f = open("Uijkl.txt", "w")
+f = open("Uijkl_SK.txt", "w")
 print >>f, num_elem
 line = 0
 for iorb1 in xrange(n_sites):

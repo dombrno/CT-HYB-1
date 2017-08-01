@@ -128,13 +128,8 @@ def generate_dd_tensor(n_orb, U, JH):
 
 
 n_sites = 2
-<<<<<<< HEAD
-Uval = 4.7
+Uval = 4.0
 Jval = 0.25 * Uval
-=======
-Uval = 5.0
-#Jval = 0.25 * Uval
->>>>>>> 9214b9a5c93b5f37f40f3dcfa48161c74aca112f
 Jval = 1.0
 #Jprime = 0.002
 
