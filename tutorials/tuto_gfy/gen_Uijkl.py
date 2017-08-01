@@ -128,8 +128,9 @@ def generate_dd_tensor(n_orb, U, JH):
 
 
 n_sites = 2
-Uval = 4.0
+Uval = 4.7
 Jval = 0.25 * Uval
+Jval = 1.0
 #Jprime = 0.002
 
 V_mat = np.identity(2 * n_sites, dtype=complex)

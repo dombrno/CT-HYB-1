@@ -31,7 +31,7 @@ def generate_U_tensor_SK(n_orb, U, JH):
 
                     for isp in xrange(2):
                         for isp2 in xrange(2):
-                            U_tensor[iorb1,isp,    iorb2,isp2,    iorb3,isp2,  iorb4,isp] += coeff
+                            U_tensor[iorb1, isp, iorb2, isp2, iorb3, isp2, iorb4, isp] += coeff
                             if coeff != 0.0:
                                 num_elem += 1
     print U_tensor[0, 0, 0, 1, 1, 0, 1, 1]
@@ -131,21 +131,21 @@ Jval = 0.25 * Uval
 #Jprime = 0.002
 Jprime = Uval - 2.0 * Jval
 
-V_mat = np.identity(2 * n_site, dtype=complex)
+V_mat = np.identity(2 * n_sites, dtype=complex)
 
-U_tensor, num_elem = generate_dd_tensor(n_sites, Uval, Jval, Jprime)
+U_tensor, num_elem = generate_U_tensor_SK(n_sites, Uval, Jval)#generate_dd_tensor(n_sites, Uval, Jval, Jprime)
 
-f = open("Uijkl.txt", "w")
+f = open("Uijkl_shinaoka.txt", "w")
 print >>f, num_elem
 line = 0
-for iorb1 in xrange(n_site):
-    for iorb2 in xrange(n_site):
-        for iorb3 in xrange(n_site):
-            for iorb4 in xrange(n_site):
+for iorb1 in xrange(n_sites):
+    for iorb2 in xrange(n_sites):
+        for iorb3 in xrange(n_sites):
+            for iorb4 in xrange(n_sites):
                 for isp in xrange(2):
                     for isp2 in xrange(2):
                         if U_tensor[iorb1,isp,iorb2,isp2,iorb3,isp2,iorb4,isp] != 0.0:
-                            print >>f, line, "   ", 2*iorb1+isp, 2*iorb2+isp2, 2*iorb3+isp2, 2*iorb4+isp, U_tensor[iorb1,isp,iorb2,isp2,iorb3,isp2,iorb4,isp].real, U_tensor[iorb1,isp,iorb2,isp2,iorb3,isp2,iorb4,isp].imag
+                            print >> f, line, "   ", 2*iorb1+isp, 2*iorb2+isp2, 2*iorb3+isp2, 2*iorb4+isp, U_tensor[iorb1,isp,iorb2,isp2,iorb3,isp2,iorb4,isp].real, U_tensor[iorb1,isp,iorb2,isp2,iorb3,isp2,iorb4,isp].imag
                             line += 1
 
 f.close()
