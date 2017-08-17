@@ -151,7 +151,7 @@ Jval = 1.0
 V_mat = np.identity(2 * n_sites, dtype=complex)
 
 U_tensor, num_elem = generate_dd_tensor(n_sites, Uval, Jval)
-U_tensor, num_elem = add_sk_tensor(n_sites, U_tensor, num_elem, Jval)
+U_tensor, num_elem = add_sk_tensor(n_sites, U_tensor, num_elem, 2.0 * Jval)
 
 corresp = {}
 corresp[(0, 0)] = 0
