@@ -60,6 +60,13 @@ $ make
 $ make test
 $ make install
 ```
+
+Compile on Salomon:
+
+```
+CXX=/apps/all/icc/2017.1.132-GCC-6.3.0-2.27/compilers_and_libraries_2017.1.132/linux/bin/intel64/icc cmake -DALPSCore_DIR=/home/dgeffroy/Code/ALPSCore/Install/share/ALPSCore/ -DCMAKE_INSTALL_PREFIX=../Install ../.
+```
+
 If you want to enable parallelization, please use a MPI C++ compiler.
 Note that if you enable MPI for the CT-HYB package, MPI must be enabled also in the installation of ALPSCore.
 If cmake does not find boost, please tell cmake the installation directory of boost by using the option "-DBOOST_ROOT=***".
