@@ -15,14 +15,8 @@
 #include "hdf5/boost_any.hpp"
 #include "solver.hpp"
 
-//void save_ouput_file(const alps::params &parameters, const alps::accumulators::result_set &mc_results, const std::map<std::string,boost::any> &results) {
-  //std::string output_file = parameters["outputfile"];
-  //alps::hdf5::archive ar(boost::filesystem::path(output_file), "w");
-  //ar["/parameters"] << parameters;
-  //ar["/simulation/results"] << mc_results;
-//}
-
 int main(int argc, const char *argv[]) {
+  //Here we construct a parameter object by parsing an ini file.
   alps::params par(argc, argv);
 
   par.define<std::string>("algorithm", "complex-matrix", "Name of algorithm (real-matrix, complex-matrix)");
@@ -55,7 +49,7 @@ int main(int argc, const char *argv[]) {
   //write the results into a hdf5 file
   if (c.rank() == 0) {
     std::string output_file = par["outputfile"];
-    alps::hdf5::archive ar(boost::filesystem::path(output_file), "w");
+    alps::hdf5::archive ar(output_file, "w");
     ar["/parameters"] << par;
     ar["/simulation/results"] << p_solver->get_accumulated_results();
     {

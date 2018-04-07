@@ -11,6 +11,14 @@ def read_param(h5, name):
     else:
         raise RuntimeError("Parameter "+ name + " not found") 
 
+def compute_Tnl(n_matsubara, n_legendre):
+    Tnl = np.zeros((n_matsubara, n_legendre), dtype=complex)
+    for n in xrange(n_matsubara):
+        sph_jn = scipy.special.sph_jn(n_legendre, (n+0.5)*np.pi)[0]
+        for il in xrange(n_legendre):
+            Tnl[n,il] = ((-1)**n) * ((1J)**(il+1)) * np.sqrt(2*il + 1.0) * sph_jn[il]
+    return Tnl
+
 def read_h5(p):
     r = {}
 
@@ -34,9 +42,15 @@ def read_h5(p):
 
     r["Sign_count"] = h5['/simulation/results/Sign/count'].value
 
-    #r["Equal_time_G1"] = h5['/EQUAL_TIME_G1'].value[:,:,0] + 1J*h5['/EQUAL_TIME_G1'].value[:,:,1]
-
     return r
+
+# input: G2 in the mix basis
+# return G2 in the Matsubara freq. domain: (i,j,k,l, fermionic freq, fermionic freq, bosnic freq)
+def compute_G2_matsubara(g2_l, niw_f):
+    nl_G2 = g2_l.shape[4]
+    Tnl_G2 = compute_Tnl(niw_f, nl_G2)
+    tmp = np.tensordot(g2_l, Tnl_G2.conjugate(), axes=(5,1))
+    return np.tensordot(Tnl_G2, tmp, axes=(1,4)).transpose((1,2,3,4,0,6,5))
 
 prefix_list = ['input']
 result_list = []
@@ -72,28 +86,23 @@ for i in range(len(result_list)):
     nf = norb*2
 
     sign = result_list[i]["Sign"]
-    gf_legendre = result_list[i]["Gtau"]
-    gomega_l = result_list[i]["Gomega"]
-    #equal_time_G1 = result_list[i]["Equal_time_G1"]
+    gtau = result_list[i]["Gtau"]
+    giw = result_list[i]["Gomega"]
 
     print "The number of measurements is ", result_list[i]["Sign_count"]
 
-    print "sign=",sign
-    #occ = 0.0
-    #for i_f in range(nf):
-        #occ += -gf_legendre[-1,i_f,i_f]
-        #print(i_f, -gf_legendre[0,i_f,i_f], -gf_legendre[-1,i_f,i_f], equal_time_G1[i_f,i_f].real)
-
-    tau_point = np.linspace(0.0, 1.0, gf_legendre.shape[0])
+    tau_point = np.linspace(0.0, 1.0, gtau.shape[0])
     plt.subplot(211)
     for i_f in range(nf):
-        plt.plot(tau_point, -gf_legendre[:,i_f,i_f].real, color=color_list[i_f], marker='', label='flavor'+str(i_f), ls='--', markersize=0)
+        plt.plot(tau_point, -gtau[:,i_f,i_f].real, color=color_list[i_f], marker='', label='flavor'+str(i_f), ls='--', markersize=0)
+        print "flavor ", i_f, "G(tau=0) = ", gtau[0,i_f,i_f].real , "G(tau=beta) = ", gtau[-1,i_f,i_f].real
 
-    omega_point = np.array([(2*im+1)*np.pi/beta for im in xrange(gomega_l.shape[0])])
+    omega_point = np.array([(2*im+1)*np.pi/beta for im in xrange(giw.shape[0])])
     plt.subplot(212)
     for i_f in range(nf):
-        plt.plot(omega_point, -gomega_l[:,i_f,i_f].imag, color=color_list[i_f], marker='', label='flavor'+str(i_f), ls='--', markersize=0)
+        plt.plot(omega_point, -giw[:,i_f,i_f].imag, color=color_list[i_f], marker='', label='flavor'+str(i_f), ls='--', markersize=0)
     plt.plot(omega_point, 1/omega_point, color='k', label=r'$1/\omega_n$', ls='-')
+
 
 plt.subplot(211)
 plt.legend(loc='best',shadow=True,frameon=False,prop={'size' : 12})

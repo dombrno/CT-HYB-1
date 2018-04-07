@@ -40,7 +40,9 @@ void HybridizationSimulation<IMP_MODEL>::create_observables() {
     p_G2_meas->create_alps_observable(measurements);
   }
 
-  create_observable<COMPLEX, SimpleRealVectorObservable>(measurements, "Equal_time_G1");
+  if (par["measurement.equal_time_G1.on"] != 0) {
+    create_observable<COMPLEX, SimpleRealVectorObservable>(measurements, "Equal_time_G1");
+  }
 
   if (par["measurement.equal_time_G2.on"] != 0) {
     create_observable<COMPLEX, SimpleRealVectorObservable>(measurements, "Equal_time_G2");
@@ -166,7 +168,7 @@ void HybridizationSimulation<IMP_MODEL>::create_worm_updaters() {
   /*
    * Equal-time G1
    */
-  {
+  if (par["measurement.equal_time_G1.on"] != 0) {
     const std::string name("Equal_time_G1");
     worm_types.push_back(Equal_time_G1);
     add_worm_mover<WormMoverType>(Equal_time_G1, name + "_mover");
@@ -218,6 +220,8 @@ void HybridizationSimulation<IMP_MODEL>::create_worm_updaters() {
         );
   }
 
+/*
+  DO NOT ACTIVATE GwormShifter. There is a bug.
   if (std::find(worm_types.begin(), worm_types.end(), G1) != worm_types.end()) {
     specialized_updaters["G1_shifter_hyb"] =
         boost::shared_ptr<LocalUpdaterType>(
@@ -237,6 +241,7 @@ void HybridizationSimulation<IMP_MODEL>::create_worm_updaters() {
             )
         );
   }
+*/
 
   //Proposal probability of worm insertion is smaller than that of removal by the number of active worm spaces.
   //We correct this here.
@@ -357,7 +362,7 @@ void HybridizationSimulation<IMP_MODEL>::read_eq_time_two_particle_greens_meas()
     return;
   }
 
-  std::ifstream infile_f(boost::lexical_cast<std::string>(par[fname_key]).c_str());
+  std::ifstream infile_f(par[fname_key].template as<std::string>());
   if (!infile_f.is_open()) {
     std::cerr << "We cannot open " << par[fname_key] << "!" << std::endl;
     exit(1);
@@ -412,7 +417,7 @@ void HybridizationSimulation<IMP_MODEL>::read_two_time_correlation_functions() {
     return;
   }
 
-  std::ifstream infile_f(boost::lexical_cast<std::string>(par[fname_key]).c_str());
+  std::ifstream infile_f(par[fname_key].template as<std::string>());
   if (!infile_f.is_open()) {
     std::cerr << "We cannot open " << par[fname_key] << "!" << std::endl;
     exit(1);
