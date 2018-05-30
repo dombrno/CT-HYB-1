@@ -147,11 +147,15 @@ Uval = 4.0
 #Jval = 0.25 * Uval
 Jval = 1.0
 #Jprime = 0.002
+# the below factor is used to tune the
+# isotropy of the interaction.
+# 2.0 corresponds to SU(2) symmetric interactin term.
+anisotropy_factor = 2.0
 
 V_mat = np.identity(2 * n_sites, dtype=complex)
 
 U_tensor, num_elem = generate_dd_tensor(n_sites, Uval, Jval)
-U_tensor, num_elem = add_sk_tensor(n_sites, U_tensor, num_elem, 1.0 * Jval)
+U_tensor, num_elem = add_sk_tensor(n_sites, U_tensor, num_elem, anisotropy_factor * Jval)
 
 corresp = {}
 corresp[(0, 0)] = 0
