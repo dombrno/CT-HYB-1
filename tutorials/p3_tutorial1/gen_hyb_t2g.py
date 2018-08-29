@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 from scipy.integrate import simps
 from math import pi
@@ -48,7 +49,7 @@ for i in range(ndiv_tau+1):
     for j in range(nf):
         for k in range(nf):
             if j==k:
-                print >>f, i, j, k, g_tau[i].real, g_tau[i].imag
+                print (i, j, k, g_tau[i].real, g_tau[i].imag, file=f)
             else:
-                print >>f, i, j, k, 0.0, 0.0
+                print (i, j, k, 0.0, 0.0, file=f)
 f.close()
