@@ -20,11 +20,11 @@ Himp = -0.5*Lambda*np.array( [
         [ 1,  0, 1J,   0,  0,  0]], dtype=complex)
 
 mu = 2.5*Uval-5*Jval
-for flavor in xrange(nf):
+for flavor in np.arange(nf):
     Himp[flavor,flavor] -= mu
 
 f = open('hopping.txt','w')
-for iorb in xrange(nf):
-    for jorb in xrange(nf):
+for iorb in np.arange(nf):
+    for jorb in np.arange(nf):
         print (iorb, jorb, Himp[iorb,jorb].real, Himp[iorb,jorb].imag, file=f)
 f.close()
