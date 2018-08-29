@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import sys
 
@@ -26,7 +27,7 @@ def generate_U_tensor_SK(n_orb, U, JH):
                     elif iorb1==iorb3 and iorb2==iorb4 and iorb1!=iorb2:
                         coeff = JH
                     elif iorb1==iorb2 and iorb3==iorb4 and iorb1!=iorb3:
-                        print iorb1, iorb2, iorb3, iorb4
+                        print (iorb1, iorb2, iorb3, iorb4)
                         coeff = JH
 
                     for isp in xrange(2):
@@ -34,7 +35,7 @@ def generate_U_tensor_SK(n_orb, U, JH):
                             U_tensor[iorb1, isp, iorb2, isp2, iorb3, isp2, iorb4, isp] += coeff
                             if coeff != 0.0:
                                 num_elem += 1
-    print U_tensor[0, 0, 0, 1, 1, 0, 1, 1]
+    print (U_tensor[0, 0, 0, 1, 1, 0, 1, 1])
     return U_tensor, num_elem
 
 def generate_U_tensor_kunes(n_orb, U, JH, Jprime):
@@ -120,7 +121,7 @@ def generate_dd_tensor(n_orb, U, JH):
             U_tensor[iorb1, isp1, iorb2, isp2,
                      iorb2, isp2, iorb1, isp1 ] = 0.5 * U
             num_elem += 2
-    print "found ", num_elem, "non zero coefficients in local Hamiltonian"
+    print ("found ", num_elem, "non zero coefficients in local Hamiltonian")
     return U_tensor, num_elem
 
 
@@ -136,7 +137,7 @@ V_mat = np.identity(2 * n_sites, dtype=complex)
 U_tensor, num_elem = generate_U_tensor_SK(n_sites, Uval, Jval)#generate_dd_tensor(n_sites, Uval, Jval, Jprime)
 
 f = open("Uijkl_shinaoka.txt", "w")
-print >>f, num_elem
+print(num_elem, end="", file=f)
 line = 0
 for iorb1 in xrange(n_sites):
     for iorb2 in xrange(n_sites):
@@ -145,7 +146,10 @@ for iorb1 in xrange(n_sites):
                 for isp in xrange(2):
                     for isp2 in xrange(2):
                         if U_tensor[iorb1,isp,iorb2,isp2,iorb3,isp2,iorb4,isp] != 0.0:
-                            print >> f, line, "   ", 2*iorb1+isp, 2*iorb2+isp2, 2*iorb3+isp2, 2*iorb4+isp, U_tensor[iorb1,isp,iorb2,isp2,iorb3,isp2,iorb4,isp].real, U_tensor[iorb1,isp,iorb2,isp2,iorb3,isp2,iorb4,isp].imag
+                            print(line, "   ", 2 * iorb1 + isp,
+                                      2 * iorb2 + isp2, 2 * iorb3 + isp2, 2 * iorb4 + isp,
+                                      U_tensor[iorb1, isp, iorb2, isp2, iorb3, isp2, iorb4, isp].real,
+                                      U_tensor[iorb1, isp, iorb2, isp2, iorb3, isp2, iorb4, isp].imag, end="", file=f)
                             line += 1
 
 f.close()
