@@ -44,7 +44,7 @@ V_mat = np.identity(2*n_site,dtype=complex)
 U_tensor, num_elem = generate_U_tensor_SK(n_site, Uval, Jval)
 
 f = open("Uijkl.txt", "w")
-print(num_elem, end="", file=f)
+print(num_elem, file=f)
 line = 0
 for iorb1 in xrange(n_site):
     for iorb2 in xrange(n_site):
@@ -57,6 +57,6 @@ for iorb1 in xrange(n_site):
                                        2 * iorb3 + isp2, 2 * iorb4 + isp,
                                        U_tensor[iorb1, isp, iorb2, isp2, iorb3, isp2, iorb4, isp].real,
                                        U_tensor[iorb1, isp, iorb2, isp2, iorb3, isp2, iorb4, isp].imag,
-                                       end="", file=f)
+                                       file=f)
                             line += 1
 f.close()
