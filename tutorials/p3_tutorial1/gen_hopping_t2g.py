@@ -20,6 +20,7 @@ Himp = -0.5*Lambda*np.array( [
         [ 1,  0, 1J,   0,  0,  0]], dtype=complex)
 
 mu = 2.5*Uval-5*Jval
+print ("mu is: ", mu)
 for flavor in np.arange(nf):
     Himp[flavor,flavor] -= mu
 
